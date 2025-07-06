@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Care4Sign - Advanced Report Analyzer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #059669;
+      --secondary-dark: #047857;
+      --danger: #dc2626;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--gray-100);
+      color: var(--gray-800);
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 2rem;
+      position: relative;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header h1 {
+      margin: 0 0 0.5rem;
+      font-size: 2.25rem;
+      font-weight: 700;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1rem;
+    }
+
+    .user-info {
+      position: absolute;
+      top: 1rem;
+      right: 2rem;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .nav-menu {
+      background: var(--gray-800);
+      display: flex;
+      padding: 0 2rem;
+    }
+
+    .nav-item {
+      padding: 1rem 1.5rem;
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom-color: var(--primary);
+    }
+
+    .content-section {
+      padding: 2rem;
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--gray-800);
+      font-weight: 600;
+      border-bottom: 2px solid var(--gray-200);
+      padding-bottom: 0.5rem;
+    }
+
+    .upload-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .upload-box {
+      background: var(--gray-100);
+      border: 2px dashed var(--gray-300);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .upload-box h3 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: var(--gray-700);
+    }
+
+    .upload-box.source2 {
+      border-color: var(--secondary);
+      background: rgba(5, 150, 105, 0.05);
+    }
+    
+    .upload-box.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      user-select: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, var(--secondary-dark), var(--secondary));
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+    
+    .btn:disabled {
+      background: var(--gray-300);
+      color: var(--gray-500);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .file-info {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: rgba(5, 150, 105, 0.1);
+      color: var(--secondary-dark);
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      display: none;
+    }
+
+    .file-info.show {
+      display: inline-block;
+    }
+
+    .file-list {
+      margin-top: 1rem;
+      padding-left: 0;
+      list-style-type: none;
+    }
+
+    .file-list li {
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 0.9375rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .file-list li:last-child {
+      border-bottom: none;
+    }
+    
+    .mapping-group {
+      margin-bottom: 2rem;
+      background: var(--gray-50);
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mapping-group h3 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: var(--gray-700);
+    }
+
+    .mapping-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .mapping-row label {
+      min-width: 150px;
+      font-weight: 500;
+      color: var(--gray-700);
+    }
+
+    select, input[type="text"] {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--gray-300);
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      min-width: 200px;
+      background: white;
+    }
+    
+    select[multiple] {
+        height: 100px;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .options-section {
+      margin-bottom: 2rem;
+    }
+
+    .option-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .analyze-btn {
+      width: 100%;
+      padding: 1rem;
+      margin: 2rem 0;
+      font-size: 1.1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: var(--shadow);
+      border-top: 4px solid var(--primary);
+    }
+    
+    .stat-card.warning { border-top-color: var(--warning); }
+    .stat-card.danger { border-top-color: var(--danger); }
+    .stat-card.success { border-top-color: var(--secondary); }
+    .stat-card.info { border-top-color: var(--info); }
+
+    .stat-card h3 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-subtext {
+      font-size: 0.875rem;
+      color: var(--gray-500);
+    }
+
+    .alert-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .alert-box {
+      background: white;
+      border-left: 5px solid var(--warning);
+      border-radius: 0.75rem;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      height: 100%;
+    }
+
+    .alert-box.empty { background: var(--gray-50); border-left-color: var(--gray-400); }
+    .alert-box.danger { border-left-color: var(--danger); }
+    .alert-box.success { border-left-color: var(--secondary); }
+    .alert-box.info { border-left-color: var(--info); }
+
+    .alert-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .alert-box.empty .alert-title { color: var(--gray-500); }
+    .alert-box.danger .alert-title { color: var(--danger); }
+    .alert-box.success .alert-title { color: var(--secondary); }
+    .alert-box.info .alert-title { color: var(--info); }
+    .alert-box.warning .alert-title { color: var(--warning); }
+
+    .alert-count { font-size: 1.25rem; font-weight: 800; margin-bottom: 1rem; }
+    .alert-box.empty .alert-count { color: var(--gray-500); }
+    .alert-box.danger .alert-count { color: var(--danger); }
+    .alert-box.success .alert-count { color: var(--secondary); }
+    .alert-box.info .alert-count { color: var(--info); }
+    .alert-box.warning .alert-count { color: var(--warning); }
+    
+    .alert-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9375rem;
+      margin-top: 1rem;
+    }
+
+    .alert-table th, .alert-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .alert-table th {
+      background: var(--gray-50);
+      color: var(--gray-700);
+      font-weight: 600;
+    }
+
+    .alert-table tr:last-child td { border-bottom: none; }
+    .amount-cell { text-align: right; font-family: 'Roboto Mono', monospace; }
+    .amount-cell.positive { color: var(--secondary); }
+    .amount-cell.negative { color: var(--danger); }
+    
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .loading-overlay.show { visibility: visible; opacity: 1; }
+    .spinner {
+      width: 3rem;
+      height: 3rem;
+      border: 4px solid rgba(99, 102, 241, 0.1);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .error-message {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: rgba(220, 38, 38, 0.1);
+      color: var(--danger);
+      border-radius: 0.5rem;
+      display: none;
+      border-left: 4px solid var(--danger);
+    }
+
+    .error-message.show { display: block; }
+
+    .success-message {
+      margin: 1rem 0;
+      padding: 1rem;
+      background: rgba(5, 150, 105, 0.1);
+      color: var(--secondary-dark);
+      border-radius: 0.5rem;
+      display: none;
+      border-left: 4px solid var(--secondary);
+    }
+
+    .success-message.show { display: block; }
+    .export-btn { margin-top: 1rem; }
+    
+    .tabs { display: flex; border-bottom: 1px solid var(--gray-200); margin-bottom: 1.5rem; }
+    .tab { padding: 0.75rem 1.5rem; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 600; color: var(--gray-600); transition: all 0.2s ease; }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); background-color: rgba(99, 102, 241, 0.05); }
+    .tab:hover:not(.active) { color: var(--primary-dark); background-color: rgba(99, 102, 241, 0.05); }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="user-info" id="user-info">User: ksismad | UTC 2025-06-20 20:51:09</div>
+      <h1>Care4Sign - Advanced Report Analyzer</h1>
+      <p>Comprehensive Payment & Commission Reconciliation Tool</p>
+    </div>
+
+    <!-- Main Analysis Section -->
+    <div id="main-analysis" class="content-section active">
+      <h2 class="section-title">Data Sources</h2>
+      <div class="upload-section">
+        <div class="upload-box" id="drop1">
+          <h3>Source 1: Main Report</h3>
+          <input type="file" id="file-input-1" class="file-input" multiple accept=".xlsx,.xls,.csv">
+          <button class="btn btn-primary" id="upload-btn-1">Choose Files</button>
+          <div id="file-info-1" class="file-info"></div>
+          <ul id="file-list-1" class="file-list"></ul>
+        </div>
+        <div class="upload-box source2" id="drop2">
+          <h3>Source 2: Comparison Data (Optional)</h3>
+          <input type="file" id="file-input-2" class="file-input" accept=".xlsx,.xls,.csv">
+          <button class="btn btn-secondary" id="upload-btn-2">Choose File</button>
+          <div id="file-info-2" class="file-info"></div>
+        </div>
+      </div>
+
+      <div id="column-mappings">
+        <h2 class="section-title">Column Mappings</h2>
+        <div class="mapping-group">
+          <div id="mapping-fields"></div>
+        </div>
+      </div>
+
+      <div class="options-section">
+        <h2 class="section-title">Analysis Options</h2>
+        <div class="option-group">
+            <label for="bp-code-filter">Filter by BP Code (S1):</label>
+            <select id="bp-code-filter" disabled>
+                <option value="all">All BP Codes</option>
+            </select>
+        </div>
+      </div>
+
+      <div id="error-message" class="error-message"></div>
+      <div id="success-message" class="success-message"></div>
+      <button id="analyze-btn" class="btn btn-secondary analyze-btn" disabled>Analyze Data</button>
+
+      <div id="results-section" style="display: none;">
+        <div class="tabs">
+          <div class="tab active" data-tab="summary">Summary View</div>
+          <div class="tab" data-tab="detailed">Detailed Report</div>
+        </div>
+
+        <div id="summary-view" class="tab-content active">
+          <h2 class="section-title">Analysis Summary</h2>
+          <div class="stats-grid" id="stats-grid"></div>
+          <div id="results" class="alert-container"></div>
+        </div>
+
+        <div id="detailed-view" class="tab-content">
+          <h2 class="section-title">Detailed Report</h2>
+          <div id="detailed-results"></div>
+          <button id="export-detailed-btn" class="btn btn-primary export-btn">Export Detailed Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    // --- START: CARE4SIGN CUSTOMIZATION ---
+    // Rate card based on user-provided data
+    const PRODUCT_RATES = {
+        'CLASS 3 SIGNING': { // Corresponds to "CLASS 3 INDIVIDUAL"
+            1: 750.00,
+            2: 840.00,
+            3: 1260.00
+        },
+        'CLASS 3 SIGNING/ENCRYPTION': { // Corresponds to "CLASS 3 INDIVIDUAL (COMBO)"
+            1: 1500.00,
+            2: 1680.00,
+            3: 2520.00
+        },
+        'CLASS 3 DGFT': { // Added from report sample - assuming same rates as SIGNING
+             1: 750.00,
+             2: 1680.00, // Based on sample data where basic price is 1600 for 2 years
+             3: 2520.00
+        },
+        // You can add the FOREIGN rates here if needed
+        // 'CLASS 3 INDIVIDUAL.ORG (FOREIGN)': { 1: 3750.00, 2: 5000.00, 3: 7500.00 },
+        // 'CLASS 3 INDIVIDUAL.ORG (COMBO) FOREIGN': { 1: 7500.00, 2: 10000.00, 3: 15000.00 }
+    };
+
+    // Helper to get standard rate from product string
+    function getStandardRate(productString) {
+        if (!productString || typeof productString !== 'string') return null;
+
+        const yearsMatch = productString.match(/(\d+)\s+YEAR/i);
+        const years = yearsMatch ? parseInt(yearsMatch[1], 10) : null;
+        if (!years) return null;
+
+        let productKey = null;
+        if (productString.toUpperCase().includes('SIGNING/E') || productString.toUpperCase().includes('COMBO')) {
+            productKey = 'CLASS 3 SIGNING/ENCRYPTION';
+        } else if (productString.toUpperCase().includes('DGFT')) {
+            productKey = 'CLASS 3 DGFT';
+        } else if (productString.toUpperCase().includes('SIGNING')) {
+            productKey = 'CLASS 3 SIGNING';
+        }
+
+        if (productKey && PRODUCT_RATES[productKey] && PRODUCT_RATES[productKey][years]) {
+            return PRODUCT_RATES[productKey][years];
+        }
+        return null;
+    }
+    // --- END: CARE4SIGN CUSTOMIZATION ---
+
+    const AppState = (() => {
+      let state = {
+        source1Files: [],
+        source2Files: [],
+        columnMappings: {},
+        analysisResults: null,
+      };
+
+      const validateState = () => {
+        const { source1Files, columnMappings } = state;
+        if (source1Files.length === 0) return false;
+        
+        // S2 is optional, so we don't validate it
+        const s1Required = ['appId', 'bpCode', 'product', 'basicPrice', 'finalPrice'];
+        
+        return s1Required.every(id => {
+          const mapping = columnMappings[id];
+          return mapping && mapping.source1 !== undefined && mapping.source1 !== "";
+        });
+      };
+
+      return {
+        getState: () => ({ ...state }),
+        setState: (newState) => { 
+          state = { ...state, ...newState }; 
+          return validateState();
+        },
+        resetAnalysis: () => { 
+          state.analysisResults = null;
+        },
+        isValid: validateState
+      };
+    })();
+
+    const DOM = {
+      fileInput1: document.getElementById('file-input-1'),
+      fileInput2: document.getElementById('file-input-2'),
+      uploadBtn1: document.getElementById('upload-btn-1'),
+      uploadBtn2: document.getElementById('upload-btn-2'),
+      drop1: document.getElementById('drop1'),
+      drop2: document.getElementById('drop2'),
+      fileInfo1: document.getElementById('file-info-1'),
+      fileInfo2: document.getElementById('file-info-2'),
+      fileList1: document.getElementById('file-list-1'),
+      mappingFields: document.getElementById('mapping-fields'),
+      analyzeBtn: document.getElementById('analyze-btn'),
+      resultsSection: document.getElementById('results-section'),
+      results: document.getElementById('results'),
+      statsGrid: document.getElementById('stats-grid'),
+      loadingOverlay: document.getElementById('loading-overlay'),
+      errorMessage: document.getElementById('error-message'),
+      successMessage: document.getElementById('success-message'),
+      userInfo: document.getElementById('user-info'),
+      exportDetailedBtn: document.getElementById('export-detailed-btn'),
+      detailedResults: document.getElementById('detailed-results'),
+      bpCodeFilter: document.getElementById('bp-code-filter'),
+      tabs: document.querySelectorAll('.tab'),
+      tabContents: document.querySelectorAll('.tab-content')
+    };
+
+    const Utils = {
+      showLoading: () => DOM.loadingOverlay.classList.add('show'),
+      hideLoading: () => DOM.loadingOverlay.classList.remove('show'),
+      showError: (msg) => { console.error("Error:", msg); DOM.errorMessage.textContent = msg; DOM.errorMessage.classList.add('show'); },
+      showSuccess: (msg) => { DOM.successMessage.textContent = msg; DOM.successMessage.classList.add('show'); setTimeout(() => DOM.successMessage.classList.remove('show'), 5000); },
+      updateUserInfo: () => { const now = new Date().toISOString().replace('T', ' ').slice(0, 19); DOM.userInfo.textContent = `User: ksismad | UTC ${now}`; },
+      formatNumberForDisplay: (num, decimals = 2) => {
+        if (typeof num !== 'number' || isNaN(num)) return num;
+        return parseFloat(num.toFixed(decimals)).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      },
+      findMatch: (headers, patterns) => {
+        if (!headers || !patterns) return '';
+        for (let pattern of patterns) {
+          const index = headers.findIndex(h => h && pattern.test(String(h)));
+          if (index !== -1) return index;
+        }
+        return '';
+      },
+      safeParseFloat: (value) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const cleaned = value.replace(/[^0-9.-]/g, '');
+          return parseFloat(cleaned) || 0;
+        }
+        return 0;
+      },
+      generateUniqueId: () => Date.now().toString(36) + Math.random().toString(36).substr(2),
+    };
+
+    const FileHandler = {
+      init: () => {
+        DOM.uploadBtn1.onclick = e => { e.preventDefault(); DOM.fileInput1.value = ''; DOM.fileInput1.click(); };
+        DOM.uploadBtn2.onclick = e => { e.preventDefault(); DOM.fileInput2.value = ''; DOM.fileInput2.click(); };
+        DOM.fileInput1.onchange = e => FileHandler.handleFileSelection(e.target.files, 1);
+        DOM.fileInput2.onchange = e => FileHandler.handleFileSelection(e.target.files, 2);
+        
+        [{ drop: DOM.drop1, src: 1 }, { drop: DOM.drop2, src: 2 }].forEach(o => {
+          o.drop.ondragover = e => { e.preventDefault(); e.stopPropagation(); o.drop.classList.add('dragover'); };
+          o.drop.ondragleave = e => { e.preventDefault(); e.stopPropagation(); o.drop.classList.remove('dragover'); };
+          o.drop.ondrop = e => { 
+            e.preventDefault(); e.stopPropagation(); o.drop.classList.remove('dragover');
+            FileHandler.handleFileSelection(e.dataTransfer.files, o.src);
+          };
+        });
+      },
+      handleFileSelection: async (files, src) => {
+        DOM.resultsSection.style.display = 'none';
+        DOM.errorMessage.classList.remove('show');
+        if (!files || files.length === 0) return Utils.showError('No files selected'); 
+        if (src === 2 && files.length > 1) return Utils.showError('Source 2 can only accept one file.');
+        
+        Utils.showLoading();
+        
+        try {
+          const fileArray = Array.from(files);
+          const targetStateKey = src === 1 ? 'source1Files' : 'source2Files';
+          
+          const processPromises = fileArray.map(file => FileHandler.processExcelFile(file).then(data => ({ file, data })).catch(err => ({ file, error: err })));
+          const results = await Promise.all(processPromises);
+          
+          const successfulFiles = results.filter(r => !r.error).map(r => ({
+              file: r.file,
+              headers: r.data[0],
+              records: r.data.slice(1),
+              fileId: Utils.generateUniqueId(),
+              fileName: r.file.name
+          }));
+          
+          if (successfulFiles.length > 0) {
+              if(src === 1) {
+                // For S1, merge records from multiple files
+                let allRecords = [];
+                let headers = successfulFiles[0].headers;
+                successfulFiles.forEach(fileData => {
+                    allRecords.push(...fileData.records);
+                    DOM.fileList1.innerHTML += `<li><span>${fileData.fileName}</span><span>${fileData.records.length} rows</span></li>`;
+                });
+                const combinedFile = {
+                    headers: headers,
+                    records: allRecords,
+                    fileName: "Merged S1 Files"
+                };
+                AppState.setState({ [targetStateKey]: [combinedFile] });
+                DOM.fileInfo1.textContent = `${successfulFiles.length} file(s) loaded, ${allRecords.length} total records.`;
+              } else {
+                 AppState.setState({ [targetStateKey]: successfulFiles });
+                 DOM.fileInfo2.textContent = `${successfulFiles[0].fileName} (${successfulFiles[0].records.length} rows)`;
+              }
+
+              const infoEl = src === 1 ? DOM.fileInfo1 : DOM.fileInfo2;
+              infoEl.classList.add('show');
+          }
+          
+          ColumnMapper.setupColumnMappings();
+          Analyzer.updateAnalyzeBtn();
+          
+        } catch (error) { Utils.showError(`Error handling file: ${error.message}`); } 
+        finally { Utils.hideLoading(); }
+      },
+      processExcelFile: (file) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => {
+            try {
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+              if (!data || data.length < 2) reject(new Error('File is empty or badly formatted.'));
+              resolve(data.map(row => row.map(cell => (cell && typeof cell.trim === 'function') ? cell.trim() : cell)));
+            } catch (err) { reject(new Error(`Parsing failed: ${err.message}`)); }
+          };
+          reader.onerror = () => reject(new Error('File read error.'));
+          reader.readAsArrayBuffer(file);
+      })
+    };
+
+    const ColumnMapper = {
+      setupColumnMappings: () => {
+        const { source1Files, source2Files } = AppState.getState();
+        const s1Headers = source1Files[0]?.headers || [];
+        const s2Headers = source2Files[0]?.headers || [];
+        
+        DOM.mappingFields.innerHTML = '';
+        if (s1Headers.length === 0) {
+            DOM.mappingFields.innerHTML = '<p>Please load a Source 1 file to see mapping options.</p>';
+            return;
+        }
+
+        const columns = [
+          { id: 'appId', label: 'Application ID', patterns: [/applicati/i], required: true, s2: true },
+          { id: 'bpCode', label: 'BP Code', patterns: [/bp code/i], required: true },
+          { id: 'product', label: 'Product Name', patterns: [/product/i], required: true },
+          { id: 'basicPrice', label: 'Basic Price', patterns: [/basic/i], required: true },
+          { id: 'finalPrice', label: 'Final Price', patterns: [/price i/i], required: true, s2: true },
+          { id: 'commission', label: 'Commission Columns', patterns: [/platin/i, /bp co/i, /bp wis/i, /bp as/i], required: false, multi: true },
+          { id: 'date', label: 'Date', patterns: [/added ti/i], required: false, s2: true }
+        ];
+        
+        let html = '';
+        columns.forEach(col => {
+          const s1Selected = Utils.findMatch(s1Headers, col.patterns);
+          const s2Selected = col.s2 ? Utils.findMatch(s2Headers, col.patterns) : null;
+          
+          html += `<div class="mapping-row">
+            <label>${col.label}${col.required ? ' *' : ''}:</label>
+            <select id="ms1-${col.id}" class="source-select" data-col="${col.id}" data-src="1" ${col.multi ? 'multiple' : ''}>
+              <option value="">Select S1 Column(s)</option>
+              ${s1Headers.map((h, i) => `<option value="${i}" ${s1Selected === i ? 'selected' : ''}>${h || `Column ${i + 1}`}</option>`).join('')}
+            </select>`;
+            
+          if (col.s2) {
+             html += `<select id="ms2-${col.id}" class="source-select" data-col="${col.id}" data-src="2" ${s2Headers.length === 0 ? 'disabled' : ''}>
+                <option value="">Select S2 Column</option>
+                ${s2Headers.map((h, i) => `<option value="${i}" ${s2Selected === i ? 'selected' : ''}>${h || `Column ${i + 1}`}</option>`).join('')}
+              </select>`;
+          }
+          html += `</div>`;
+        });
+        
+        DOM.mappingFields.innerHTML = html;
+        document.querySelectorAll('.source-select').forEach(select => select.addEventListener('change', ColumnMapper.updateColumnMappings));
+        ColumnMapper.updateColumnMappings(); // Trigger initial mapping
+      },
+      updateColumnMappings: () => {
+        DOM.resultsSection.style.display = 'none';
+        const columns = ['appId', 'bpCode', 'product', 'basicPrice', 'finalPrice', 'commission', 'date'];
+        const mappings = {};
+        
+        columns.forEach(id => {
+          const s1El = document.getElementById(`ms1-${id}`);
+          const s2El = document.getElementById(`ms2-${id}`);
+          mappings[id] = { 
+            source1: s1El ? (s1El.multiple ? Array.from(s1El.selectedOptions).map(opt => opt.value) : s1El.value) : '', 
+            source2: s2El ? s2El.value : '' 
+          };
+        });
+        
+        const isValid = AppState.setState({ columnMappings: mappings });
+        if(isValid) ColumnMapper.populateBPCodeFilter();
+        Analyzer.updateAnalyzeBtn();
+      },
+      populateBPCodeFilter: () => {
+        const { source1Files, columnMappings } = AppState.getState();
+        const bpCodeIndex = columnMappings.bpCode.source1;
+        if (!source1Files[0] || bpCodeIndex === '') {
+            DOM.bpCodeFilter.innerHTML = '<option value="all">All BP Codes</option>';
+            DOM.bpCodeFilter.disabled = true;
+            return;
+        }
+
+        const bpCodes = [...new Set(source1Files[0].records.map(r => r[bpCodeIndex]))].filter(Boolean).sort();
+        DOM.bpCodeFilter.innerHTML = '<option value="all">All BP Codes</option>' + bpCodes.map(code => `<option value="${code}">${code}</option>`).join('');
+        DOM.bpCodeFilter.disabled = false;
+      }
+    };
+
+    const Analyzer = {
+      updateAnalyzeBtn: () => {
+        const isValid = AppState.isValid();
+        DOM.analyzeBtn.disabled = !isValid;
+        DOM.analyzeBtn.textContent = isValid ? 'Analyze Data' : 'Select Files & Required Mappings';
+      },
+      analyzeData: () => {
+        try {
+          const { source1Files, source2Files, columnMappings } = AppState.getState();
+          const selectedBPCode = DOM.bpCodeFilter.value;
+
+          let s1Records = source1Files[0].records;
+          if (selectedBPCode !== 'all') {
+              s1Records = s1Records.filter(r => r[columnMappings.bpCode.source1] === selectedBPCode);
+          }
+
+          const s2Records = source2Files.length > 0 ? source2Files[0].records : [];
+          
+          const idx = {
+            s1: _.mapValues(columnMappings, 'source1'),
+            s2: _.mapValues(columnMappings, 'source2')
+          };
+
+          const scenarios = {
+            "Price Exceeds Standard Rate": [],
+            "S1 Record Missing in S2": [],
+            "S2 Record Missing in S1": [],
+            "Final Price Mismatch": [],
+            "Duplicates in S1": [],
+          };
+
+          const s1Map = new Map();
+          s1Records.forEach(r => {
+              const appId = String(r[idx.s1.appId]);
+              if (appId) {
+                  if (!s1Map.has(appId)) s1Map.set(appId, []);
+                  s1Map.get(appId).push(r);
+              }
+          });
+
+          // Duplicates in S1
+          s1Map.forEach((records, appId) => {
+              if (records.length > 1) {
+                  scenarios["Duplicates in S1"].push({ AppID: appId, Count: records.length, 'BP Code': records[0][idx.s1.bpCode] });
+              }
+          });
+          
+          s1Records.forEach(r1 => {
+              const appId = String(r1[idx.s1.appId]);
+              if (!appId) return;
+
+              // Price Differential Analysis
+              const productString = r1[idx.s1.product];
+              const standardRate = getStandardRate(productString);
+              const actualBasicPrice = Utils.safeParseFloat(r1[idx.s1.basicPrice]);
+
+              if (standardRate !== null && actualBasicPrice > standardRate) {
+                  scenarios["Price Exceeds Standard Rate"].push({
+                      AppID: appId,
+                      Product: productString,
+                      'BP Code': r1[idx.s1.bpCode],
+                      'Actual Price': actualBasicPrice,
+                      'Standard Rate': standardRate,
+                      Difference: actualBasicPrice - standardRate
+                  });
+              }
+          });
+
+          // Comparison with S2 (if S2 file is provided)
+          if (s2Records.length > 0) {
+              const s2Map = new Map(s2Records.map(r => [String(r[idx.s2.appId]), r]));
+
+              s1Records.forEach(r1 => {
+                  const appId = String(r1[idx.s1.appId]);
+                  if (!s2Map.has(appId)) {
+                      scenarios["S1 Record Missing in S2"].push({ AppID: appId, 'BP Code': r1[idx.s1.bpCode], 'S1 Final Price': Utils.safeParseFloat(r1[idx.s1.finalPrice]) });
+                  } else {
+                      const r2 = s2Map.get(appId);
+                      const price1 = Utils.safeParseFloat(r1[idx.s1.finalPrice]);
+                      const price2 = Utils.safeParseFloat(r2[idx.s2.finalPrice]);
+                      if (Math.abs(price1 - price2) > 0.01) {
+                          scenarios["Final Price Mismatch"].push({ AppID: appId, 'S1 Price': price1, 'S2 Price': price2, Difference: price1 - price2 });
+                      }
+                  }
+              });
+
+              s2Map.forEach((r2, appId) => {
+                  if (!s1Map.has(appId)) {
+                      scenarios["S2 Record Missing in S1"].push({ AppID: appId, 'S2 Final Price': Utils.safeParseFloat(r2[idx.s2.finalPrice]) });
+                  }
+              });
+          }
+
+          // Commission calculation for all processed S1 records
+          const commissionData = s1Records.map(r => {
+            const totalCommission = idx.s1.commission.reduce((sum, colIndex) => sum + Utils.safeParseFloat(r[colIndex]), 0);
+            return {
+                AppID: r[idx.s1.appId],
+                'BP Code': r[idx.s1.bpCode],
+                'Basic Price': Utils.safeParseFloat(r[idx.s1.basicPrice]),
+                'Total Commission': totalCommission,
+                'Final Price': Utils.safeParseFloat(r[idx.s1.finalPrice])
+            };
+          });
+
+          scenarios["Commission Summary"] = commissionData;
+
+          AppState.setState({ analysisResults: scenarios });
+          return scenarios;
+
+        } catch (error) {
+          Utils.showError(`Analysis failed: ${error.message}`);
+          console.error(error);
+          return {};
+        }
+      },
+      displayResults: (scenarios) => {
+        const { source1Files, source2Files } = AppState.getState();
+
+        const totalS1Commission = (scenarios["Commission Summary"] || []).reduce((sum, r) => sum + r['Total Commission'], 0);
+        const totalPriceDiff = (scenarios["Price Exceeds Standard Rate"] || []).reduce((sum, r) => sum + r.Difference, 0);
+
+        DOM.statsGrid.innerHTML = `
+          <div class="stat-card success"><h3>Total Commission (S1)</h3><div class="stat-value">₹ ${Utils.formatNumberForDisplay(totalS1Commission)}</div><div class="stat-subtext">Sum of all selected commission columns</div></div>
+          <div class="stat-card ${totalPriceDiff > 0 ? 'danger' : 'success'}"><h3>Total Price Variance</h3><div class="stat-value">₹ ${Utils.formatNumberForDisplay(totalPriceDiff)}</div><div class="stat-subtext">Sum of overcharges vs standard rates</div></div>
+          <div class="stat-card warning"><h3>Price Alerts</h3><div class="stat-value">${scenarios["Price Exceeds Standard Rate"].length}</div><div class="stat-subtext">Transactions above standard rate</div></div>
+          ${source2Files.length > 0 ? `<div class="stat-card info"><h3>S1 Records Missing in S2</h3><div class="stat-value">${scenarios["S1 Record Missing in S2"].length}</div><div class="stat-subtext">Potential unpaid items</div></div>` : ''}
+        `;
+        
+        let summaryHtml = '';
+        const orderedScenarios = ["Price Exceeds Standard Rate", "Final Price Mismatch", "S1 Record Missing in S2", "S2 Record Missing in S1", "Duplicates in S1"];
+        
+        orderedScenarios.forEach(scenarioName => {
+            if (!scenarios[scenarioName]) return;
+            const records = scenarios[scenarioName];
+            const isEmpty = records.length === 0;
+            if (scenarioName.includes('S2') && source2Files.length === 0) return;
+
+            let boxClass = 'alert-box';
+            if(isEmpty) boxClass += ' empty';
+            else if (scenarioName.includes('Price Exceeds') || scenarioName.includes('Missing in S2')) boxClass += ' danger';
+            else if (scenarioName.includes('Duplicates') || scenarioName.includes('Mismatch')) boxClass += ' warning';
+            else boxClass += ' info';
+
+            summaryHtml += `<div class="${boxClass}"><div class="alert-title">${scenarioName}</div><div class="alert-count">${records.length} records</div>`;
+            if (!isEmpty) {
+                const headers = Object.keys(records[0]);
+                summaryHtml += `<table class="alert-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+                records.slice(0, 5).forEach(rec => {
+                    summaryHtml += `<tr>${headers.map(h => {
+                        let val = rec[h];
+                        let cls = (typeof val === 'number') ? 'amount-cell' : '';
+                        if (h === 'Difference') cls += val > 0 ? ' negative' : ' positive';
+                        val = (typeof val === 'number') ? Utils.formatNumberForDisplay(val) : val;
+                        return `<td class="${cls}">${val || 'N/A'}</td>`;
+                    }).join('')}</tr>`;
+                });
+                summaryHtml += `</tbody></table>`;
+                if (records.length > 5) summaryHtml += `<div style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-500);">+ ${records.length - 5} more records (see detailed report)</div>`;
+            } else {
+                summaryHtml += `<div style="color:var(--gray-500);font-style:italic;margin-top:0.5rem;">No records found</div>`;
+            }
+            summaryHtml += `</div>`;
+        });
+        DOM.results.innerHTML = summaryHtml;
+        
+        // Detailed View
+        let detailedHtml = '';
+        const allScenarios = ["Commission Summary", ...orderedScenarios];
+        allScenarios.forEach(scenarioName => {
+            if (!scenarios[scenarioName] || scenarios[scenarioName].length === 0) return;
+            const records = scenarios[scenarioName];
+            const headers = Object.keys(records[0]);
+            detailedHtml += `<h3 style="margin-top:2rem;color:var(--gray-700);">${scenarioName} (${records.length} records)</h3><div style="overflow-x:auto;"><table class="alert-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+            records.forEach(rec => {
+                detailedHtml += `<tr>${headers.map(h => {
+                    let val = rec[h];
+                    let cls = (typeof val === 'number') ? 'amount-cell' : '';
+                    if (h === 'Difference') cls += val > 0 ? ' negative' : ' positive';
+                    val = (typeof val === 'number') ? Utils.formatNumberForDisplay(val) : val;
+                    return `<td class="${cls}">${val || 'N/A'}</td>`;
+                }).join('')}</tr>`;
+            });
+            detailedHtml += `</tbody></table></div>`;
+        });
+        DOM.detailedResults.innerHTML = detailedHtml;
+
+        DOM.resultsSection.style.display = 'block';
+        DOM.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        Utils.showSuccess("Analysis completed successfully.");
+      },
+      exportToExcel: (data, fileName) => {
+        if (!data || data.length === 0) return Utils.showError("No data to export.");
+        Utils.showLoading();
+        try {
+          const wb = XLSX.utils.book_new();
+          data.forEach(sheet => {
+            if (sheet.records.length > 0) {
+              const ws = XLSX.utils.json_to_sheet(sheet.records);
+              XLSX.utils.book_append_sheet(wb, ws, sheet.name.substring(0, 31));
+            }
+          });
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          XLSX.writeFile(wb, `${fileName}_${timestamp}.xlsx`);
+          Utils.showSuccess(`${fileName} exported successfully.`);
+        } catch (error) { Utils.showError(`Export failed: ${error.message}`); } 
+        finally { Utils.hideLoading(); }
+      },
+      exportDetailedResults: () => {
+          const { analysisResults } = AppState.getState();
+          if (!analysisResults) return Utils.showError("No analysis results to export.");
+          const sheets = Object.entries(analysisResults).map(([name, records]) => ({ name, records })).filter(s => s.records.length > 0);
+          Analyzer.exportToExcel(sheets, "Care4Sign_Detailed_Report");
+      },
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        FileHandler.init();
+        Utils.updateUserInfo();
+        setInterval(Utils.updateUserInfo, 15000);
+        
+        DOM.analyzeBtn.addEventListener('click', () => {
+          Utils.showLoading();
+          setTimeout(() => { // Allow loading screen to render
+            try {
+              const results = Analyzer.analyzeData();
+              if (Object.keys(results).length) Analyzer.displayResults(results);
+            } catch (error) { Utils.showError(`Analysis failed: ${error.message}`); } 
+            finally { Utils.hideLoading(); }
+          }, 10);
+        });
+        
+        DOM.exportDetailedBtn.addEventListener('click', Analyzer.exportDetailedResults);
+        
+        DOM.tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            const tabName = tab.getAttribute('data-tab');
+            DOM.tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            DOM.tabContents.forEach(c => c.classList.toggle('active', c.id === `${tabName}-view`));
+          });
+        });
+        
+        console.log("Care4Sign Report Analyzer Initialized");
+      } catch (error) {
+        console.error("Initialization error:", error);
+        document.body.innerHTML = `<div style="padding: 2rem; color: #dc2626; font-size: 1.2rem;">Application failed to initialize. Please check the console. Error: ${error.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
