@@ -1,9 +1,10 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- DEFINITIVE, PRO VERSION - 2023-11-02 (Bug Fix Release) -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced App ID Analyzer Pro (Care4Sign)</title>
+  <title>Advanced Reconciliation Pro (Care4Sign)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
   <style>
@@ -11,85 +12,102 @@
       --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #059669; --danger: #dc2626; --warning: #f59e0b; --info: #3b82f6;
       --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db; --gray-500: #6b7280; --gray-700: #374151; --gray-800: #1f2937;
       --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; background: var(--gray-100); color: var(--gray-800); font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.5; }
-    .container { max-width: 1400px; margin: 0 auto; background: white; min-height: 100vh; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .container { max-width: 1400px; margin: 0 auto; background: white; min-height: 100vh; box-shadow: var(--shadow-lg); }
     .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 2rem; position: relative; }
     .header h1 { margin: 0 0 0.5rem; font-size: 2.25rem; font-weight: 700; }
     .header p { opacity: 0.9; font-size: 1.1rem; }
     .user-info { position: absolute; top: 1rem; right: 2rem; background: rgba(255, 255, 255, 0.15); padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
     .nav-menu { background: var(--gray-800); display: flex; padding: 0 2rem; }
     .nav-item { padding: 1rem 1.5rem; color: white; text-decoration: none; font-weight: 500; transition: all 0.2s ease; border-bottom: 3px solid transparent; cursor: pointer; }
-    .nav-item:hover { background: rgba(255, 255, 255, 0.1); }
     .nav-item.active { background: rgba(255, 255, 255, 0.05); border-bottom-color: var(--primary); }
     .content-section { padding: 2rem; display: none; }
     .content-section.active { display: block; }
-    .section-title { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--gray-700); font-weight: 600; border-bottom: 2px solid var(--gray-200); padding-bottom: 0.5rem; }
+    .section-title { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--gray-700); font-weight: 600; border-bottom: 2px solid var(--gray-200); padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
     .section-title .filter-badge { font-size: 0.9rem; font-weight: 500; background-color: var(--info); color: white; padding: 0.25rem 0.75rem; border-radius: 999px; margin-left: 1rem; vertical-align: middle; }
     .upload-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .upload-box { background: var(--gray-50); border: 2px dashed var(--gray-300); border-radius: 0.75rem; padding: 1.5rem; transition: all 0.2s ease; position: relative; }
+    .upload-box { background: var(--gray-50); border: 2px dashed var(--gray-300); border-radius: 0.75rem; padding: 1.5rem; text-align: center; transition: all 0.2s ease; }
+    .upload-box.dragover { background: rgba(99, 102, 241, 0.1); border-color: var(--primary); transform: scale(1.02); }
     .upload-box h3 { margin-bottom: 1rem; font-size: 1.25rem; color: var(--gray-700); }
-    .upload-box.source2::after { content: "(Paid Source)"; color: var(--secondary); font-size: 0.875rem; display: block; margin-top: 0.5rem; font-weight: 500; }
-    .upload-box.dragover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
-    .file-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+    .upload-box h3 .source-label { font-size: 0.875rem; color: var(--secondary); font-weight: 500; margin-left: 0.5rem; }
+    .upload-controls { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+    .file-input { display: none; }
     .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; user-select: none; }
     .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
     .btn-secondary { background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: white; }
+    .btn-danger { background: linear-gradient(135deg, var(--danger), #991b1b); color: white; }
+    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; }
     .btn:disabled { background: var(--gray-300); color: var(--gray-500); cursor: not-allowed; transform: none; box-shadow: none; }
-    .file-info { margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(5, 150, 105, 0.1); color: var(--secondary); border-radius: 0.5rem; font-size: 0.9375rem; font-weight: 500; display: none; }
+    .file-info { padding: 0.75rem 1rem; background: rgba(5, 150, 105, 0.1); color: var(--secondary); border-radius: 0.5rem; font-weight: 500; display: none; }
     .file-info.show { display: inline-block; }
-    .file-list { margin-top: 1rem; padding-left: 0; list-style-type: none; }
-    .file-list li { padding: 0.5rem; border-bottom: 1px solid var(--gray-200); font-size: 0.9375rem; display: flex; justify-content: space-between; }
+    .file-list { margin-top: 1rem; padding-left: 0; list-style-type: none; text-align: left; }
+    .file-list li { padding: 0.5rem; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; }
     .mapping-group { margin-bottom: 2rem; background: var(--gray-50); padding: 1.5rem; border-radius: 0.75rem; box-shadow: var(--shadow); }
-    .mapping-group h3 { margin-bottom: 1rem; font-size: 1.25rem; color: var(--gray-700); }
-    .mapping-row { display: flex; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
+    .mapping-row { display: flex; align-items: center; margin-bottom: 1rem; gap: 1.5rem; flex-wrap: wrap; }
     .mapping-row.commission-row { align-items: flex-start; }
     .commission-checkbox-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.5rem 1rem; background: white; padding: 1rem; border: 1px solid var(--gray-200); border-radius: 0.5rem; flex-grow: 1; }
     .commission-checkbox-group label { display: flex; align-items: center; font-weight: normal; min-width: auto; }
     .commission-checkbox-group input { margin-right: 0.5rem; }
-    .mapping-row label { min-width: 200px; font-weight: 500; color: var(--gray-700); }
+    .mapping-row > label { min-width: 200px; font-weight: 500; color: var(--gray-700); position: relative; }
+    .mapping-selects { display: flex; gap: 1rem; flex-wrap: wrap; flex-grow: 1; }
+    .select-group { display: flex; align-items: center; gap: 0.5rem; }
+    .select-group span { font-weight: 600; color: var(--gray-500); }
+    [data-tooltip] { position: relative; cursor: help; }
+    [data-tooltip]::after { content: attr(data-tooltip); position: absolute; left: 50%; transform: translateX(-50%); bottom: 125%; background: var(--gray-700); color: white; padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: normal; width: max-content; max-width: 300px; text-align: center; z-index: 10; opacity: 0; visibility: hidden; transition: opacity 0.2s; }
+    [data-tooltip]:hover::after { opacity: 1; visibility: visible; }
     select, input[type="number"] { padding: 0.5rem 0.75rem; border: 1px solid var(--gray-300); border-radius: 0.5rem; font-size: 0.9375rem; min-width: 240px; background: white; }
     select:focus, input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
-    .options-section, .gst-options, .commission-input { margin-top: 1rem; padding: 1.5rem; border-radius: 0.5rem; }
-    .gst-options { background: rgba(14, 165, 233, 0.05); border-left: 4px solid var(--info); }
-    .commission-input { background: rgba(245, 158, 11, 0.05); border-left: 4px solid var(--warning); }
-    .gst-options h4, .commission-input h4 { margin-top: 0; margin-bottom: 0.75rem; font-size: 1.1rem; color: var(--gray-700); }
-    .gst-options label { display: inline-flex; align-items: center; margin-right: 1.5rem; }
-    .gst-options input, .commission-input input { margin-right: 0.5rem; }
+    select:disabled { background-color: var(--gray-200); color: var(--gray-500); cursor: not-allowed; }
+    .options-group { margin-bottom: 2rem; padding: 1.5rem; border-radius: 0.75rem; box-shadow: var(--shadow); background: var(--gray-50); }
+    .options-group h4 { margin-top: 0; margin-bottom: 0.75rem; font-size: 1.1rem; color: var(--gray-700); }
+    .gst-options { background: rgba(14, 165, 233, 0.05); border-left: 4px solid var(--info); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .commission-input { background: rgba(245, 158, 11, 0.05); border-left: 4px solid var(--warning); padding: 1rem; border-radius: 0.5rem; }
     .analyze-btn { width: 100%; padding: 1rem; margin: 2rem 0; font-size: 1.1rem; }
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
     .stat-card { background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: var(--shadow); border-top: 4px solid var(--primary); }
-    .stat-card.warning { border-top-color: var(--warning); }
-    .stat-card.danger { border-top-color: var(--danger); }
-    .stat-card.info { border-top-color: var(--info); }
+    .stat-card.warning { border-top-color: var(--warning); } .stat-card.danger { border-top-color: var(--danger); } .stat-card.info { border-top-color: var(--info); }
     .stat-card h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1rem; font-weight: 600; color: var(--gray-500); }
     .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--gray-800); }
     .alert-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .alert-box { background: white; border-left: 5px solid var(--warning); border-radius: 0.75rem; box-shadow: var(--shadow); padding: 1.5rem; height: 100%; overflow: hidden;}
-    .alert-box.empty { background: var(--gray-50); border-left-color: var(--gray-300); }
-    .alert-box.danger { border-left-color: var(--danger); }
-    .alert-box.info { border-left-color: var(--info); }
+    .alert-box.empty { background: var(--gray-50); border-left-color: var(--gray-300); text-align: center; color: var(--gray-500); }
+    .alert-box.empty .alert-count { color: var(--secondary); font-size: 1.5rem; }
+    .alert-box.danger { border-left-color: var(--danger); } .alert-box.info { border-left-color: var(--info); }
     .alert-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--gray-700); }
     .alert-box.danger .alert-title { color: var(--danger); }
-    .alert-box.info .alert-title { color: var(--info); }
     .alert-count { font-size: 1.25rem; font-weight: 800; color: var(--gray-800); margin-bottom: 1rem; }
     .alert-table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; margin-top: 1rem; }
     .alert-table th, .alert-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--gray-200); }
     .alert-table th { background: var(--gray-50); color: var(--gray-700); font-weight: 600; }
+    .alert-table th.sortable { cursor: pointer; user-select: none; }
+    .alert-table th.sortable:hover { background-color: var(--gray-200); }
+    .alert-table th.sortable::after { content: ' \2195'; color: var(--gray-300); }
+    .alert-table th.sort-asc::after { content: ' \25B2'; color: var(--primary); }
+    .alert-table th.sort-desc::after { content: ' \25BC'; color: var(--primary); }
     .amount-cell { text-align: right; font-family: 'Roboto Mono', monospace; }
-    .loading-overlay { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: opacity 0.3s ease; }
+    .loading-overlay { position: fixed; inset: 0; background: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: opacity 0.3s ease; }
     .loading-overlay.show { visibility: visible; opacity: 1; }
-    .spinner { width: 3rem; height: 3rem; border: 4px solid rgba(99, 102, 241, 0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    .loading-overlay .spinner { width: 3rem; height: 3rem; border: 4px solid rgba(99, 102, 241, 0.1); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    .loading-overlay .loading-text { margin-top: 1rem; font-size: 1.1rem; font-weight: 500; color: var(--gray-700); }
     .error-message { margin: 1rem 0; padding: 1rem; background: rgba(220, 38, 38, 0.1); color: var(--danger); border-radius: 0.5rem; display: none; border-left: 4px solid var(--danger); }
     .error-message.show { display: block; }
     .export-btn { margin-top: 1rem; }
     .tabs { display: flex; border-bottom: 1px solid var(--gray-200); margin-bottom: 1.5rem; }
     .tab { padding: 0.75rem 1.5rem; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 600; color: var(--gray-500); transition: all 0.2s ease; }
     .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
-    .paid-cell { color: var(--secondary); font-weight: 600; }
-    .unpaid-cell { color: var(--danger); font-weight: 600; }
+    .paid-cell { color: var(--secondary); font-weight: 600; } .unpaid-cell { color: var(--danger); font-weight: 600; }
+    @media (max-width: 768px) {
+      .upload-section { grid-template-columns: 1fr; }
+      .mapping-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+      .mapping-row > label { min-width: 100%; margin-bottom: 0.5rem; }
+      .mapping-selects { width: 100%; }
+      select, input[type="number"] { min-width: 100%; }
+      .nav-menu { flex-wrap: wrap; } .nav-item { padding: 0.75rem 1rem; }
+    }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
@@ -109,17 +127,23 @@
       <h2 class="section-title">1. Data Sources</h2>
       <div class="upload-section">
         <div class="upload-box" id="drop1">
-          <h3>Source 1 Files (Your Report)</h3>
+          <h3>Source 1 (Your Report)</h3>
+          <p class="file-instructions">Drag & drop files here or click to select</p>
           <input type="file" id="file-input-1" class="file-input" multiple accept=".xlsx,.xls,.csv">
-          <button class="btn btn-primary" id="upload-btn-1">Choose Files</button>
-          <div id="file-info-1" class="file-info"></div>
+          <div class="upload-controls">
+            <button class="btn btn-primary" id="upload-btn-1">Choose Files</button>
+            <div id="file-info-1" class="file-info"></div>
+          </div>
           <ul id="file-list-1" class="file-list"></ul>
         </div>
-        <div class="upload-box source2" id="drop2">
-          <h3>Source 2 File (Paid Source)</h3>
+        <div class="upload-box" id="drop2">
+          <h3>Source 2 <span class="source-label">(Paid Source)</span></h3>
+          <p class="file-instructions">Drag & drop a single file here or click to select</p>
           <input type="file" id="file-input-2" class="file-input" accept=".xlsx,.xls,.csv">
-          <button class="btn btn-secondary" id="upload-btn-2">Choose File</button>
-          <div id="file-info-2" class="file-info"></div>
+          <div class="upload-controls">
+            <button class="btn btn-secondary" id="upload-btn-2">Choose File</button>
+            <div id="file-info-2" class="file-info"></div>
+          </div>
         </div>
       </div>
       
@@ -128,26 +152,29 @@
         <div id="bp-code-filter"></div>
       </div>
 
-      <h2 class="section-title">2. Column Mappings</h2>
+      <h2 class="section-title">
+        <span>2. Column Mappings</span>
+        <button id="reset-mappings-btn" class="btn btn-danger btn-sm" style="display:none;">Reset Mappings</button>
+      </h2>
       <div id="column-mappings" class="mapping-group">
-        <div id="mapping-fields"><p>Please load files for both sources to configure mappings.</p></div>
+        <div id="mapping-fields"><p>Please load at least one file to configure mappings.</p></div>
       </div>
 
       <h2 class="section-title">3. Analysis Options</h2>
-      <div class="options-section">
-          <div class="gst-options">
-            <h4>GST Options (for S1 Basic Amount)</h4>
-            <label><input type="checkbox" id="apply-gst" checked> Apply 18% GST to S1 Basic Amount</label>
-            <label><input type="checkbox" id="gst-round" disabled> Round GST amounts</label>
-          </div>
-          <div class="commission-input">
-            <h4>Commission Analysis</h4>
-            <label>
-              Desired Commission Percentage:
-              <input type="number" id="desired-commission" min="0" max="100" step="0.01" value="5.00"> %
-            </label>
-            <small style="display:block; color: var(--gray-500)">This is calculated against the S1 Basic Amount.</small>
-          </div>
+      <div class="options-group">
+        <div class="gst-options">
+          <h4>GST Options (for S1 Basic Amount)</h4>
+          <label for="apply-gst"><input type="checkbox" id="apply-gst" checked> Apply 18% GST to S1 Basic Amount</label>
+          <label for="gst-round"><input type="checkbox" id="gst-round"> Round GST amounts</label>
+        </div>
+        <div class="commission-input">
+          <h4>Commission Analysis</h4>
+          <label for="desired-commission">
+            Desired Commission Percentage:
+          </label>
+          <input type="number" id="desired-commission" min="0" max="100" step="0.01" value="5.00"> %
+          <small style="display:block; color: var(--gray-500); margin-top: 0.25rem;">This is calculated against the S1 Basic Amount.</small>
+        </div>
       </div>
 
       <div id="error-message" class="error-message"></div>
@@ -181,19 +208,23 @@
     </div>
   </div>
 
-  <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div></div>
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div id="loading-text" class="loading-text">Processing...</div>
+  </div>
 
   <script>
+    const STORAGE_KEY = 'care4sign_mappings';
+
     const AppState = (() => {
       let state = {
         source1Files: [], source2Files: [],
-        columnMappings: { commission: { source1: [] } },
+        columnMappings: { commission: { s1: [] } },
         selectedBPCode: 'all',
         analysisOptions: { applyGST: true, gstRound: false, desiredCommission: 5.0 },
         analysisResults: null, mergedData: null,
       };
 
-      // CRITICAL FIX: Robust validation logic
       const validateState = () => {
         const { source1Files, source2Files, columnMappings } = state;
         if (source1Files.length === 0 || source2Files.length === 0) return false;
@@ -202,24 +233,30 @@
             s1: ['appId', 'amount', 'date', 'bpCode', 'product', 'priceInclGST'],
             s2: ['appId', 's2Amount']
         };
-
-        const s1Valid = required.s1.every(id => columnMappings[id]?.source1);
-        const s2Valid = required.s2.every(id => columnMappings[id]?.source2);
-        const commissionValid = columnMappings.commission?.source1?.length > 0;
+        
+        const s1Valid = required.s1.every(id => columnMappings[id]?.s1);
+        const s2Valid = required.s2.every(id => columnMappings[id]?.s2);
+        const commissionValid = columnMappings.commission?.s1?.length > 0;
         
         return s1Valid && s2Valid && commissionValid;
       };
 
       return {
         getState: () => ({ ...state }),
-        setState: (newState) => { state = { ...state, ...newState }; },
+        setState: (newState) => { 
+          state = { ...state, ...newState }; 
+          if (newState.source1Files || newState.source2Files || newState.columnMappings) {
+            state.analysisResults = null;
+            state.mergedData = null;
+          }
+        },
         reset: () => { state.analysisResults = null; state.mergedData = null; },
         isValid: validateState
       };
     })();
 
     const DOM = {
-      ...[...document.querySelectorAll('[id]')].reduce((acc, el) => ({ ...acc, [el.id.replace(/-./g, m => m[1].toUpperCase())]: el }), {}),
+      ...[...document.querySelectorAll('[id]')].reduce((acc, el) => ({ ...acc, [_.camelCase(el.id)]: el }), {}),
       navItems: document.querySelectorAll('.nav-item'),
       tabs: document.querySelectorAll('.tab'),
     };
@@ -228,41 +265,42 @@
       resetAnalysisUI: () => {
         DOM.resultsSection.style.display = 'none';
         AppState.reset();
-        ['results', 'statsGrid', 'detailedResults', 'mergedResults'].forEach(id => DOM[id].innerHTML = '');
+        ['results', 'statsGrid', 'detailedResults', 'mergedResults'].forEach(id => DOM[id] && (DOM[id].innerHTML = ''));
         DOM.summaryTitle.innerHTML = 'Analysis Summary';
         DOM.errorMessage.classList.remove('show');
       },
       displayResults: (scenarios) => {
         const { selectedBPCode } = AppState.getState();
-        if (selectedBPCode !== 'all') { DOM.summaryTitle.innerHTML = `Analysis Summary <span class="filter-badge">Filtered by: ${selectedBPCode}</span>`; }
+        DOM.summaryTitle.innerHTML = `Analysis Summary ${selectedBPCode !== 'all' ? `<span class="filter-badge">Filtered by: ${selectedBPCode}</span>` : ''}`;
         
         const totalAlerts = Object.values(scenarios).reduce((sum, arr) => sum + arr.length, 0);
         DOM.statsGrid.innerHTML = `
-          <div class="stat-card danger"><h3>Total Alerts</h3><div class="stat-value">${totalAlerts}</div></div>
+          <div class="stat-card danger"><h3>Total Discrepancies</h3><div class="stat-value">${totalAlerts}</div></div>
           <div class="stat-card warning"><h3>Price Over-runs</h3><div class="stat-value">${scenarios["Price Exceeds Standard Rate"].length}</div></div>
           <div class="stat-card info"><h3>GST Mismatches</h3><div class="stat-value">${scenarios["S1 GST Calculation Mismatch"].length}</div></div>
-          <div class="stat-card danger"><h3>Amount Mismatches</h3><div class="stat-value">${scenarios["S2 Paid, S1 Paid but amount different"].length}</div></div>
+          <div class="stat-card danger"><h3>Amount Mismatches</h3><div class="stat-value">${scenarios["Amount Mismatch (S1 vs S2)"].length}</div></div>
         `;
         
-        const orderedScenarios = Object.keys(scenarios);
         let summaryHtml = '', detailedHtml = '';
-        orderedScenarios.forEach(name => {
-            const records = scenarios[name];
+        Object.entries(scenarios).forEach(([name, records]) => {
             const isEmpty = records.length === 0;
-            const boxClass = `alert-box ${isEmpty ? 'empty' : (name.includes('missing') || name.includes('Mismatch') || name.includes('Exceeds') ? 'danger' : 'info')}`;
+            const boxClass = `alert-box ${isEmpty ? 'empty' : (name.includes('Missing') || name.includes('Mismatch') || name.includes('Exceeds') || name.includes('Different') ? 'danger' : 'info')}`;
             const headers = isEmpty ? [] : Object.keys(records[0]);
             
-            summaryHtml += `<div class="${boxClass}"><div class="alert-title">${name}</div><div class="alert-count">${records.length} records</div>`;
-            if (!isEmpty) {
-                summaryHtml += `<table class="alert-table"><thead><tr>${headers.map(h => `<th>${_.startCase(h)}</th>`).join('')}</tr></thead><tbody>`;
-                summaryHtml += records.slice(0, 4).map(rec => `<tr>${headers.map(h => `<td class="${typeof rec[h] === 'number' ? 'amount-cell' : ''}">${Utils.formatNumber(rec[h])}</td>`).join('')}</tr>`).join('');
-                summaryHtml += `</tbody></table>`;
-                if (records.length > 4) summaryHtml += `<div style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-500);">+ ${records.length - 4} more</div>`;
+            summaryHtml += `<div class="${boxClass}"><div class="alert-title">${name}</div>`;
+            if (isEmpty) {
+              summaryHtml += `<div class="alert-count">✅ No issues found</div>`;
+            } else {
+              summaryHtml += `<div class="alert-count">${records.length} records</div>`;
+              summaryHtml += `<table class="alert-table"><thead><tr>${headers.map(h => `<th>${_.startCase(h)}</th>`).join('')}</tr></thead><tbody>`;
+              summaryHtml += records.slice(0, 4).map(rec => `<tr>${headers.map(h => `<td class="${typeof rec[h] === 'number' ? 'amount-cell' : ''}">${Utils.formatNumber(rec[h])}</td>`).join('')}</tr>`).join('');
+              summaryHtml += `</tbody></table>`;
+              if (records.length > 4) summaryHtml += `<div style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-500);">+ ${records.length - 4} more</div>`;
             }
             summaryHtml += `</div>`;
             
             if (!isEmpty) {
-                detailedHtml += `<h3 style="margin-top:2rem;">${name} (${records.length})</h3><div style="overflow-x:auto;"><table class="alert-table"><thead><tr>${headers.map(h => `<th>${_.startCase(h)}</th>`).join('')}</tr></thead><tbody>`;
+                detailedHtml += `<h3 style="margin-top:2rem;">${name} (${records.length})</h3><div style="overflow-x:auto;"><table class="alert-table detailed-table"><thead><tr>${headers.map((h, i) => `<th class="sortable" data-col-index="${i}">${_.startCase(h)}</th>`).join('')}</tr></thead><tbody>`;
                 detailedHtml += records.map(rec => `<tr>${headers.map(h => `<td class="${typeof rec[h] === 'number' ? 'amount-cell' : ''}">${Utils.formatNumber(rec[h])}</td>`).join('')}</tr>`).join('');
                 detailedHtml += `</tbody></table></div>`;
             }
@@ -272,38 +310,80 @@
         DOM.detailedResults.innerHTML = detailedHtml || '<p>No issues found in detailed results.</p>';
         
         const { mergedData } = AppState.getState();
-        const mergedHeaders = ["AppID", "Source", "Status", "Basic_Amount", "GST_Price", "Commission"];
-        DOM.mergedResults.innerHTML = `<div style="overflow-x:auto;"><table class="alert-table"><thead><tr>${mergedHeaders.map(h => `<th>${_.startCase(h)}</th>`).join('')}</tr></thead><tbody>` +
-          mergedData.map(rec => `<tr>${mergedHeaders.map(h => `<td class="${typeof rec[h] === 'number' ? 'amount-cell' : (rec.Status === 'Paid' ? 'paid-cell' : 'unpaid-cell')}">${rec[h] !== undefined ? Utils.formatNumber(rec[h]) : 'N/A'}</td>`).join('')}</tr>`).join('') +
-          `</tbody></table></div>`;
+        if(mergedData && mergedData.length > 0) {
+            const mergedHeaders = Object.keys(mergedData[0]);
+            DOM.mergedResults.innerHTML = `<div style="overflow-x:auto;"><table class="alert-table merged-table"><thead><tr>${mergedHeaders.map((h, i) => `<th class="sortable" data-col-index="${i}">${_.startCase(h)}</th>`).join('')}</tr></thead><tbody>` +
+              mergedData.map(rec => `<tr>${mergedHeaders.map(h => `<td class="${typeof rec[h] === 'number' ? 'amount-cell' : (String(rec[h]).includes('Paid') ? 'paid-cell' : String(rec[h]).includes('Unpaid') ? 'unpaid-cell' : '')}">${rec[h] !== undefined ? Utils.formatNumber(rec[h]) : 'N/A'}</td>`).join('')}</tr>`).join('') +
+              `</tbody></table></div>`;
+        }
 
         DOM.resultsSection.style.display = 'block';
         DOM.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        UIManager.attachTableSorters();
       },
+      attachTableSorters: () => {
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', () => {
+                const table = header.closest('table');
+                const tbody = table.querySelector('tbody');
+                if (!tbody) return;
+                const colIndex = header.dataset.colIndex;
+                const isAsc = header.classList.contains('sort-asc');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                const sortedRows = rows.sort((a, b) => {
+                    const aText = a.children[colIndex].textContent.trim();
+                    const bText = b.children[colIndex].textContent.trim();
+                    const aNum = parseFloat(aText.replace(/[^0-9.-]+/g,""));
+                    const bNum = parseFloat(bText.replace(/[^0-9.-]+/g,""));
+
+                    const valA = isNaN(aNum) ? aText : aNum;
+                    const valB = isNaN(bNum) ? bText : bNum;
+
+                    if (valA < valB) return isAsc ? 1 : -1;
+                    if (valA > valB) return isAsc ? -1 : 1;
+                    return 0;
+                });
+                
+                table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+                header.classList.toggle('sort-asc', !isAsc);
+                header.classList.toggle('sort-desc', isAsc);
+                
+                tbody.innerHTML = '';
+                sortedRows.forEach(row => tbody.appendChild(row));
+            });
+        });
+      }
     }
 
     const Utils = {
-      showLoading: () => DOM.loadingOverlay.classList.add('show'),
+      showLoading: (text = 'Processing...') => {
+        DOM.loadingText.textContent = text;
+        DOM.loadingOverlay.classList.add('show');
+      },
       hideLoading: () => DOM.loadingOverlay.classList.remove('show'),
       showError: (msg) => { console.error("Error:", msg); DOM.errorMessage.textContent = msg; DOM.errorMessage.classList.add('show'); },
       updateUserInfo: () => { const now = new Date().toISOString().replace('T', ' ').slice(0, 19); DOM.userInfo.textContent = `User: ksismad | UTC ${now}`; },
       formatNumber: (num, dec = 2) => (typeof num !== 'number' || isNaN(num)) ? num : num.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec }),
-      findMatch: (headers, patterns) => {
-        if (!headers || !patterns) return '';
-        for (const p of patterns) {
-          const idx = headers.findIndex(h => h && p.test(String(h)));
-          if (idx !== -1) return idx;
-        }
-        return '';
-      },
+      findMatch: (headers, patterns) => headers.findIndex(h => patterns.some(p => p.test(String(h)))),
       safeParseFloat: (v) => (typeof v === 'number') ? v : parseFloat(String(v).replace(/[^0-9.-]/g, '')) || 0,
       getS1Status: (row, statusIndex) => {
-        if (statusIndex) { // If status column is mapped, use it
+        if (statusIndex !== undefined && row[statusIndex] !== undefined) {
           const status = String(row[statusIndex]).toLowerCase().trim();
           if (status.includes('unpaid') || status.includes('not paid')) return "Unpaid";
         }
-        return "Paid"; // Default to Paid
+        return "Paid";
       },
+      validateFile: (file) => {
+        const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'];
+        if (!validTypes.some(type => file.type === type || file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
+          return { valid: false, error: `Invalid file type: ${file.name}. Please upload Excel (.xlsx, .xls) or CSV files.` };
+        }
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          return { valid: false, error: `File too large: ${file.name}. Maximum size is 10MB.` };
+        }
+        return { valid: true };
+      }
     };
 
     const FileHandler = {
@@ -312,55 +392,90 @@
         DOM.uploadBtn2.onclick = () => DOM.fileInput2.click();
         DOM.fileInput1.onchange = e => e.target.files.length && FileHandler.handleFileSelection(e.target.files, 1);
         DOM.fileInput2.onchange = e => e.target.files.length && FileHandler.handleFileSelection(e.target.files, 2);
-        
         [DOM.applyGst, DOM.gstRound, DOM.desiredCommission].forEach(el => el.onchange = FileHandler.handleOptionChange);
+        
+        ['drop1', 'drop2'].forEach((zoneId, i) => {
+          const zone = DOM[zoneId];
+          zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+          zone.addEventListener('dragleave', e => { e.preventDefault(); zone.classList.remove('dragover'); });
+          zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('dragover');
+            FileHandler.handleFileSelection(e.dataTransfer.files, i + 1);
+          });
+        });
+
+        DOM.gstRound.disabled = !DOM.applyGst.checked;
       },
       handleOptionChange: () => {
           const applyGST = DOM.applyGst.checked;
           DOM.gstRound.disabled = !applyGST;
           if (!applyGST) DOM.gstRound.checked = false;
-          
-          AppState.setState({
-              analysisOptions: { applyGST, gstRound: DOM.gstRound.checked, desiredCommission: Utils.safeParseFloat(DOM.desiredCommission.value) }
+          AppState.setState({ 
+            analysisOptions: { 
+              applyGST, 
+              gstRound: DOM.gstRound.checked, 
+              desiredCommission: Utils.safeParseFloat(DOM.desiredCommission.value) 
+            } 
           });
           UIManager.resetAnalysisUI();
       },
       handleFileSelection: async (files, src) => {
         UIManager.resetAnalysisUI();
-        if (src === 2 && files.length > 1) return Utils.showError('Source 2 only accepts one file.');
+        DOM.errorMessage.classList.remove('show');
+        if (src === 2 && files.length > 1) {
+          Utils.showError('Source 2 only accepts one file.');
+          return;
+        }
         
-        Utils.showLoading();
+        for (const file of files) {
+          const validation = Utils.validateFile(file);
+          if (!validation.valid) { Utils.showError(validation.error); return; }
+        }
+        
+        Utils.showLoading('Reading files...');
         try {
-          const successfulFiles = await Promise.all(Array.from(files).map(async f => {
+          const processedFiles = await Promise.all(Array.from(files).map(async f => {
+            try {
               const data = await FileHandler.processExcelFile(f);
-              return { data, headers: data[0], records: data.slice(1), fileName: f.name };
+              return { data, fileName: f.name, headers: data[0] || [], records: data.slice(1) };
+            } catch (error) {
+              throw new Error(`Error processing ${f.name}: ${error.message}`);
+            }
           }));
 
-          const targetState = src === 1 ? 'source1Files' : 'source2Files';
-          AppState.setState({ [targetState]: successfulFiles });
+          AppState.setState({ [src === 1 ? 'source1Files' : 'source2Files']: processedFiles });
           
           const fileInfoDOM = src === 1 ? DOM.fileInfo1 : DOM.fileInfo2;
-          fileInfoDOM.textContent = `${successfulFiles.length} file(s) loaded.`;
+          fileInfoDOM.textContent = `${processedFiles.length} file(s) loaded.`;
           fileInfoDOM.classList.add('show');
+          
           if (src === 1) {
-              DOM.fileList1.innerHTML = successfulFiles.map(f => `<li><span>${f.fileName}</span><span>${f.records.length} rows</span></li>`).join('');
-              ColumnMapper.populateBPCodeFilter();
+              DOM.fileList1.innerHTML = processedFiles.map(f => `<li><span>${f.fileName}</span><span>${f.records.length} rows</span></li>`).join('');
           }
-          ColumnMapper.setupColumnMappings();
-        } catch (error) { Utils.showError(error.message); } 
-        finally { Utils.hideLoading(); }
+          
+          await ColumnMapper.setupColumnMappings();
+          if (AppState.getState().source1Files.length > 0) ColumnMapper.populateBPCodeFilter();
+
+        } catch (error) { 
+          Utils.showError(error.message); 
+        } finally { 
+          Utils.hideLoading(); 
+        }
       },
       processExcelFile: (file) => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
             const ws = wb.Sheets[wb.SheetNames[0]];
             if (!ws) return reject(new Error(`Sheet not found in ${file.name}`));
             const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
             if (!data || data.length < 2) return reject(new Error(`No data rows in ${file.name}`));
             resolve(data.filter(row => row.some(cell => cell !== null && cell !== '')));
-          } catch (err) { reject(new Error(`Error parsing ${file.name}: ${err.message}`)); }
+          } catch (err) { 
+            reject(new Error(`Error parsing ${file.name}: ${err.message}`)); 
+          }
         };
         reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
         reader.readAsArrayBuffer(file);
@@ -368,65 +483,140 @@
     };
 
     const ColumnMapper = {
-      setupColumnMappings: () => {
+      async setupColumnMappings() {
         const { source1Files, source2Files } = AppState.getState();
+        if (source1Files.length === 0 && source2Files.length === 0) {
+            DOM.mappingFields.innerHTML = '<p>Please load at least one file to configure mappings.</p>';
+            return;
+        }
+
         const s1Headers = source1Files[0]?.headers || [];
         const s2Headers = source2Files[0]?.headers || [];
-        if (s1Headers.length === 0 || s2Headers.length === 0) return;
+        const savedMappings = this.loadMappingsFromStorage();
 
         const columns = [
-          { id: 'appId', label: 'App ID (Application...)', p: [/app.*id/i, /applicati/i], s1: true, s2: true, req: true },
-          { id: 'amount', label: 'S1 Basic Amount', p: [/basic/i], s1: true, req: true },
-          { id: 'priceInclGST', label: 'S1 Price incl. GST', p: [/price.*gst/i, /price i/i], s1: true, req: true },
-          { id: 's2Amount', label: 'S2 Paid Amount', p: [/amount/i, /price/i], s2: true, req: true },
-          { id: 'bpCode', label: 'S1 BP Code', p: [/bp.*code/i], s1: true, req: true },
-          { id: 'product', label: 'S1 Product Description', p: [/product/i], s1: true, req: true },
-          { id: 'status', label: 'S1 Status (Optional)', p: [/status/i], s1: true },
-          { id: 'commission', label: 'S1 Commission Columns', p: [/amount/i], s1: true, req: true },
-          { id: 'date', label: 'S1 Date', p: [/date/i, /added ti/i], s1: true, req: true },
+          { id: 'appId', label: 'App ID (Application...)', p: [/app.*id/i, /applicati/i], s1: true, s2: true, req: true, help: "Unique identifier for each transaction" },
+          { id: 'amount', label: 'S1 Basic Amount', p: [/basic/i, /amount/i], s1: true, req: true, help: "Pre-tax base price of the product" },
+          { id: 'priceInclGST', label: 'S1 Price incl. GST', p: [/price.*gst/i, /price i/i, /final.*price/i], s1: true, req: true, help: "Final price including tax in your report" },
+          { id: 's2Amount', label: 'S2 Paid Amount', p: [/amount/i, /price/i], s2: true, req: true, help: "Final amount paid as recorded in Source 2" },
+          { id: 'bpCode', label: 'S1 BP Code', p: [/bp.*code/i], s1: true, req: true, help: "Business Partner identifier code" },
+          { id: 'product', label: 'S1 Product Description', p: [/product/i, /description/i], s1: true, req: true, help: "Name/description of the product sold" },
+          { id: 'status', label: 'S1 Status (Optional)', p: [/status/i], s1: true, help: "Column indicating if transaction is Paid/Unpaid" },
+          { id: 'date', label: 'S1 Date', p: [/date/i, /added ti/i], s1: true, req: true, help: "Transaction date from your report" },
+          { id: 'commission', label: 'S1 Commission Columns', p: [/commission/i, /comm\./i], s1: true, req: true, help: "Check all columns that should be summed for total commission" },
         ];
+
+        const createSelect = (srcKey, id, patterns) => {
+            const isS1 = srcKey === 's1';
+            const headers = isS1 ? s1Headers : s2Headers;
+            const loaded = headers.length > 0;
+            
+            if (!loaded) {
+                return `<select disabled><option>Load Source ${isS1 ? 1 : 2} File</option></select>`;
+            }
+
+            const savedIndex = savedMappings[id]?.[srcKey];
+            const autoIndex = Utils.findMatch(headers, patterns);
+            
+            // *** FIX FOR AUTO-SELECTION ***
+            // Prioritize saved value only if it's valid, otherwise fallback to auto-detection.
+            const selectedIndex = (savedIndex != null && savedIndex !== '') ? savedIndex : (autoIndex !== -1 ? autoIndex : '');
+            
+            return `<select data-col="${id}" data-src="${srcKey}" id="${id}-${srcKey}">
+                        <option value="">Select Column</option>
+                        ${headers.map((h, i) => `<option value="${i}" ${String(selectedIndex) === String(i) ? 'selected' : ''}>${h || `Col ${i+1}`}</option>`).join('')}
+                    </select>`;
+        };
 
         let html = '';
         columns.forEach(col => {
-          html += `<div class="mapping-row ${col.id === 'commission' ? 'commission-row' : ''}"><label>${col.label}${col.req ? ' *' : ''}:</label>`;
-          if (col.id === 'commission') {
-            html += `<div class="commission-checkbox-group">${s1Headers.map((h, i) => `<label><input type="checkbox" class="commission-checkbox" value="${i}" ${col.p[0].test(h) ? 'checked' : ''}>${h || `Col ${i+1}`}</label>`).join('')}</div>`;
-          } else {
-            const createSelect = (src, headers) => `<select id="m${src}-${col.id}" data-col="${col.id}" data-src="${src}"><option value="">Select Column</option>${headers.map((h, i) => `<option value="${i}" ${Utils.findMatch(headers, col.p) === i ? 'selected' : ''}>${h || `Col ${i+1}`}</option>`).join('')}</select>`;
-            if (col.s1) html += createSelect('s1', s1Headers);
-            if (col.s2) html += createSelect('s2', s2Headers);
-          }
-          html += '</div>';
+            html += `<div class="mapping-row ${col.id === 'commission' ? 'commission-row' : ''}">
+                        <label for="${col.id}-s1">${col.label}${col.req ? ' *' : ''}${col.help ? `<span data-tooltip="${col.help}"> ℹ️</span>` : ''}:</label>`;
+
+            if (col.id === 'commission') {
+                if (s1Headers.length > 0) {
+                    const savedCommission = savedMappings.commission?.s1 || s1Headers.map((h, i) => col.p[0].test(String(h)) ? String(i) : null).filter(Boolean);
+                    html += `<div class="commission-checkbox-group">${s1Headers.map((h, i) => `<label><input type="checkbox" class="commission-checkbox" value="${i}" ${savedCommission.includes(String(i)) ? 'checked' : ''}>${h || `Col ${i+1}`}</label>`).join('')}</div>`;
+                } else {
+                    html += `<div class="commission-checkbox-group" style="color:var(--gray-500)">Load Source 1 file to see commission columns.</div>`;
+                }
+            } else {
+                let selectsHtml = '';
+                if (col.s1) {
+                    selectsHtml += `<div class="select-group"><span>S1:</span>${createSelect('s1', col.id, col.p)}</div>`;
+                }
+                if (col.s2) {
+                    selectsHtml += `<div class="select-group"><span>S2:</span>${createSelect('s2', col.id, col.p)}</div>`;
+                }
+                html += `<div class="mapping-selects">${selectsHtml}</div>`;
+            }
+            html += '</div>';
         });
         
         DOM.mappingFields.innerHTML = html;
-        document.querySelectorAll('select, .commission-checkbox').forEach(el => el.onchange = ColumnMapper.updateColumnMappings);
-        ColumnMapper.updateColumnMappings(); // Initial population
+        DOM.resetMappingsBtn.style.display = 'inline-flex';
+        document.querySelectorAll('select, .commission-checkbox').forEach(el => el.onchange = this.updateColumnMappings);
+        this.updateColumnMappings();
       },
-      updateColumnMappings: () => {
+      updateColumnMappings() {
         UIManager.resetAnalysisUI();
-        const mappings = { commission: { source1: [] } };
+        const mappings = { commission: { s1: [] } };
         document.querySelectorAll('select[data-col]').forEach(sel => {
+            if(sel.disabled) return;
             const id = sel.dataset.col;
             if (!mappings[id]) mappings[id] = {};
             mappings[id][sel.dataset.src] = sel.value;
         });
-        mappings.commission.source1 = [...document.querySelectorAll('.commission-checkbox:checked')].map(cb => cb.value);
+        mappings.commission.s1 = [...document.querySelectorAll('.commission-checkbox:checked')].map(cb => cb.value);
         AppState.setState({ columnMappings: mappings });
+        ColumnMapper.saveMappingsToStorage(mappings);
         Analyzer.updateAnalyzeBtn();
       },
-      populateBPCodeFilter: () => {
+      populateBPCodeFilter() {
         const { source1Files } = AppState.getState();
-        const bpCodeIndex = Utils.findMatch(source1Files[0]?.headers, [/bp.*code/i]);
-        if (!source1Files.length || bpCodeIndex === '') { DOM.bpCodeFilterContainer.style.display = 'none'; return; }
+        const bpCodeCol = AppState.getState().columnMappings.bpCode?.s1;
+        if (!source1Files.length || bpCodeCol === undefined || bpCodeCol === '') { 
+          DOM.bpCodeFilterContainer.style.display = 'none'; return; 
+        }
         
         const allRecords = source1Files.flatMap(f => f.records);
-        const uniqueBPCodes = [...new Set(allRecords.map(r => r[bpCodeIndex]).filter(Boolean))].sort();
+        const uniqueBPCodes = [...new Set(allRecords.map(r => r[bpCodeCol]).filter(Boolean))].sort();
         if (uniqueBPCodes.length === 0) { DOM.bpCodeFilterContainer.style.display = 'none'; return; }
         
         DOM.bpCodeFilter.innerHTML = `<select id="bp-code-select" style="width: 100%;"><option value="all">All BP Codes</option>${uniqueBPCodes.map(code => `<option value="${code}">${code}</option>`).join('')}</select>`;
         DOM.bpCodeFilterContainer.style.display = 'block';
-        DOM.bpCodeSelect.onchange = (e) => { AppState.setState({ selectedBPCode: e.target.value }); UIManager.resetAnalysisUI(); };
+        document.getElementById('bp-code-select').onchange = (e) => { 
+          AppState.setState({ selectedBPCode: e.target.value }); UIManager.resetAnalysisUI(); 
+        };
+      },
+      saveMappingsToStorage(mappings) {
+        try {
+          const { source1Files, source2Files } = AppState.getState();
+          const storable = {
+            s1Headers: source1Files[0]?.headers || [],
+            s2Headers: source2Files[0]?.headers || [],
+            mappings
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(storable));
+        } catch(e) { console.warn("Could not save mappings to localStorage", e); }
+      },
+      loadMappingsFromStorage() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) return {};
+          const { s1Headers, s2Headers, mappings } = JSON.parse(stored);
+          const currentS1 = AppState.getState().source1Files[0]?.headers;
+          const currentS2 = AppState.getState().source2Files[0]?.headers;
+          
+          if (_.isEqual(s1Headers, currentS1) && _.isEqual(s2Headers, currentS2)) {
+            return mappings;
+          }
+        } catch(e) { console.warn("Could not load mappings from localStorage", e); }
+        return {};
+      },
+      resetMappings() {
+        localStorage.removeItem(STORAGE_KEY);
+        this.setupColumnMappings();
       }
     };
 
@@ -434,89 +624,126 @@
       updateAnalyzeBtn: () => {
         const isValid = AppState.isValid();
         DOM.analyzeBtn.disabled = !isValid;
-        DOM.analyzeBtn.textContent = isValid ? 'Analyze Data' : 'Select Files & All Required (*) Mappings';
+        DOM.analyzeBtn.textContent = isValid ? 'Analyze Data' : 'Load Both Files & Select All Required (*) Mappings';
       },
-      analyzeData: () => {
+      analyzeData() {
+        Utils.showLoading('Analyzing data...');
         const { source1Files, source2Files, columnMappings, selectedBPCode, analysisOptions } = AppState.getState();
-        
-        const standardRates = { 'CLASS_3_SIGNING_2_YEAR': 840, 'CLASS_3_ENCRYPTION_2_YEAR': 840, 'CLASS_3_SIGNING_ENCRYPTION_2_YEAR': 1680, 'CLASS_3_SIGNING_3_YEAR': 1260, 'CLASS_3_ENCRYPTION_3_YEAR': 1260, 'CLASS_3_SIGNING_ENCRYPTION_3_YEAR': 2520, 'CLASS_3_SIGNING_1_YEAR': 750, 'CLASS_3_ENCRYPTION_1_YEAR': 750, 'CLASS_3_SIGNING_ENCRYPTION_1_YEAR': 1500 };
-        const normalizeKey = (str) => String(str).toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
-        
-        let s1Records = source1Files.flatMap(f => f.records.map(r => ({...r, fileName: f.fileName})));
-        // CRITICAL FIX: BP Code filter applied at the start
-        if (selectedBPCode !== 'all') {
-            s1Records = s1Records.filter(r => String(r[columnMappings.bpCode.source1]) === String(selectedBPCode));
-        }
-
         const idx = columnMappings;
-        const scenarios = Object.fromEntries(["Price Exceeds Standard Rate", "S1 GST Calculation Mismatch", "S1 Paid but missing in S2", "S2 Paid but missing in S1", "S2 Paid, S1 Paid but amount different", "Commission received higher than desired", "Commission received lower than desired", "Duplicates in S1", "Duplicates in S2", "S1 Marked Paid but Commission Missing", "S1 Marked Unpaid but Commission Exists"].map(k => [k, []]));
-        const mergedData = [];
-        const s2Map = new Map(source2Files[0].records.map(r => [String(r[idx.appId.s2]), r]));
-        const s1AppIdCounts = _.countBy(s1Records, r => String(r[idx.appId.s1]));
-        
+
+        let s1Records = source1Files.flatMap(f => f.records);
+        if (selectedBPCode !== 'all') {
+            s1Records = s1Records.filter(r => String(r[idx.bpCode.s1]) === String(selectedBPCode));
+        }
+        const s2Records = source2Files[0].records;
+
+        const reconciliationMap = new Map();
+
+        // Process S1 records
         s1Records.forEach(r1 => {
             const appId = String(r1[idx.appId.s1]);
-            const basicAmount = Utils.safeParseFloat(r1[idx.amount.s1]);
-            const commission = idx.commission.source1.reduce((sum, i) => sum + Utils.safeParseFloat(r1[i]), 0);
-            const status = Utils.getS1Status(r1, idx.status?.s1);
-            
-            // Checks
-            const productDesc = r1[idx.product.s1];
-            const standardRate = standardRates[normalizeKey(productDesc)];
-            if (standardRate !== undefined && basicAmount > standardRate) {
-                scenarios["Price Exceeds Standard Rate"].push({ AppID: appId, Product: productDesc, BasicAmount: basicAmount, StandardRate: standardRate, Difference: basicAmount - standardRate });
-            }
-            let s1GstCalculated = analysisOptions.applyGST ? (analysisOptions.gstRound ? Math.round(basicAmount * 1.18) : basicAmount * 1.18) : basicAmount;
-            const s1GstFromFile = Utils.safeParseFloat(r1[idx.priceInclGST.s1]);
-            if (analysisOptions.applyGST && Math.abs(s1GstCalculated - s1GstFromFile) > 0.01) {
-                scenarios["S1 GST Calculation Mismatch"].push({ AppID: appId, BasicAmount: basicAmount, CalculatedGSTPrice: s1GstCalculated, PriceFromFile: s1GstFromFile, Difference: s1GstFromFile - s1GstCalculated });
-            }
-            const desiredComm = (analysisOptions.desiredCommission / 100) * basicAmount;
-            const commDiff = commission - desiredComm;
-            if (commDiff > 0.01) scenarios["Commission received higher than desired"].push({ AppID: appId, Commission: commission, Desired: desiredComm, Difference: commDiff });
-            if (commDiff < -0.01) scenarios["Commission received lower than desired"].push({ AppID: appId, Commission: commission, Desired: desiredComm, Difference: commDiff });
-            
-            if (idx.status?.s1) {
-                if (status === 'Paid' && commission === 0) scenarios["S1 Marked Paid but Commission Missing"].push({ AppID: appId });
-                if (status === 'Unpaid' && commission > 0) scenarios["S1 Marked Unpaid but Commission Exists"].push({ AppID: appId, Commission: commission });
-            }
-            
-            const r2 = s2Map.get(appId);
-            if (r2) {
-                const s2Amount = Utils.safeParseFloat(r2[idx.s2Amount.s2]);
-                if (Math.abs(s1GstFromFile - s2Amount) > 0.01) {
-                    scenarios["S2 Paid, S1 Paid but amount different"].push({ AppID: appId, S1_Price: s1GstFromFile, S2_Price: s2Amount, Difference: s2Amount - s1GstFromFile });
-                }
-            } else {
-                scenarios["S1 Paid but missing in S2"].push({ AppID: appId, S1_Price: s1GstFromFile });
-            }
-            mergedData.push({ AppID: appId, Source: 'S1', Status: status, Basic_Amount: basicAmount, GST_Price: s1GstFromFile, Commission: commission });
+            if (!appId) return;
+            const entry = reconciliationMap.get(appId) || { s1: [], s2: [] };
+            entry.s1.push(r1);
+            reconciliationMap.set(appId, entry);
         });
-        
-        s2Map.forEach((r2, appId) => {
-            if (!s1AppIdCounts[appId]) {
-                const s2Amount = Utils.safeParseFloat(r2[idx.s2Amount.s2]);
-                scenarios["S2 Paid but missing in S1"].push({ AppID: appId, S2_Price: s2Amount });
-                mergedData.push({ AppID: appId, Source: 'S2', Status: 'Paid', GST_Price: s2Amount });
-            }
+
+        // Process S2 records
+        s2Records.forEach(r2 => {
+            const appId = String(r2[idx.appId.s2]);
+            if (!appId) return;
+            const entry = reconciliationMap.get(appId) || { s1: [], s2: [] };
+            entry.s2.push(r2);
+            reconciliationMap.set(appId, entry);
         });
-        
-        for (const [appId, count] of Object.entries(s1AppIdCounts)) { if (count > 1) scenarios["Duplicates in S1"].push({ AppID: appId, Count: count }); }
-        const s2AppIdCounts = _.countBy(source2Files[0].records, r => String(r[idx.appId.s2]));
-        for (const [appId, count] of Object.entries(s2AppIdCounts)) { if (count > 1) scenarios["Duplicates in S2"].push({ AppID: appId, Count: count }); }
-        
+
+        const scenarios = {
+            "Duplicates in S1": [], "Duplicates in S2": [],
+            "S1 Record Missing in S2 (Unpaid)": [], "S2 Paid but Missing in S1": [],
+            "Amount Mismatch (S1 vs S2)": [], "Price Exceeds Standard Rate": [],
+            "S1 GST Calculation Mismatch": [], "S1 Marked Paid but Commission Missing": [],
+            "S1 Marked Unpaid but Commission Exists": [],
+            "Commission Exceeds Desired Rate": [], "Commission Below Desired Rate": [],
+        };
+        const mergedData = [];
+
+        for (const [appId, data] of reconciliationMap.entries()) {
+            this.processEntry(appId, data, scenarios, mergedData, idx, analysisOptions);
+        }
+
         AppState.setState({ analysisResults: scenarios, mergedData: _.sortBy(mergedData, 'AppID') });
         return scenarios;
       },
+      processEntry(appId, data, scenarios, mergedData, idx, options) {
+        if (data.s1.length > 1) scenarios["Duplicates in S1"].push({ AppID: appId, Count: data.s1.length });
+        if (data.s2.length > 1) scenarios["Duplicates in S2"].push({ AppID: appId, Count: data.s2.length });
+        
+        const standardRates = { 'CLASS_3_SIGNING_2_YEAR': 840, 'CLASS_3_ENCRYPTION_2_YEAR': 840, 'CLASS_3_SIGNING/ENCRYPTION_2_YEAR': 1680, 'CLASS_3_SIGNING_3_YEAR': 1260, 'CLASS_3_ENCRYPTION_3_YEAR': 1260, 'CLASS_3_SIGNING/ENCRYPTION_3_YEAR': 2520, 'CLASS_3_SIGNING_1_YEAR': 750, 'CLASS_3_ENCRYPTION_1_YEAR': 750, 'CLASS_3_SIGNING/ENCRYPTION_1_YEAR': 1500 };
+        const normalizeKey = (str) => String(str || '').toUpperCase().replace(/[^A-Z0-9/]/g, '_').replace(/_+/g, '_');
+        
+        if (data.s1.length > 0) {
+            const r1 = data.s1[0]; // Analyze first record in case of duplicates
+            const basicAmount = Utils.safeParseFloat(r1[idx.amount.s1]);
+            const s1GstFromFile = Utils.safeParseFloat(r1[idx.priceInclGST.s1]);
+            const commission = idx.commission.s1.reduce((sum, i) => sum + Utils.safeParseFloat(r1[i]), 0);
+            const status = Utils.getS1Status(r1, idx.status?.s1);
+            
+            // S1 only checks
+            const productKey = normalizeKey(r1[idx.product.s1]);
+            if (standardRates[productKey] && basicAmount > standardRates[productKey]) {
+                scenarios["Price Exceeds Standard Rate"].push({ AppID: appId, Product: r1[idx.product.s1], BasicAmount: basicAmount, StandardRate: standardRates[productKey], Difference: basicAmount - standardRates[productKey] });
+            }
+            if (options.applyGST) {
+                let s1GstCalculated = options.gstRound ? Math.round(basicAmount * 1.18) : basicAmount * 1.18;
+                if (Math.abs(s1GstCalculated - s1GstFromFile) > 0.01) {
+                    scenarios["S1 GST Calculation Mismatch"].push({ AppID: appId, BasicAmount: basicAmount, CalculatedGSTPrice: s1GstCalculated, PriceFromFile: s1GstFromFile, Difference: s1GstFromFile - s1GstCalculated });
+                }
+            }
+            const desiredComm = (options.desiredCommission / 100) * basicAmount;
+            if (commission > desiredComm + 0.01) scenarios["Commission Exceeds Desired Rate"].push({ AppID: appId, Commission: commission, Desired: desiredComm, Difference: commission - desiredComm });
+            if (commission < desiredComm - 0.01 && commission > 0) scenarios["Commission Below Desired Rate"].push({ AppID: appId, Commission: commission, Desired: desiredComm, Difference: commission - desiredComm });
+            
+            if (idx.status?.s1) {
+                if (status === 'Paid' && commission === 0) scenarios["S1 Marked Paid but Commission Missing"].push({ AppID: appId, BasicAmount: basicAmount });
+                if (status === 'Unpaid' && commission > 0) scenarios["S1 Marked Unpaid but Commission Exists"].push({ AppID: appId, Commission: commission });
+            }
+
+            // S1 vs S2 checks
+            if (data.s2.length > 0) {
+                const s2Amount = Utils.safeParseFloat(data.s2[0][idx.s2Amount.s2]);
+                if (Math.abs(s1GstFromFile - s2Amount) > 0.01) {
+                    scenarios["Amount Mismatch (S1 vs S2)"].push({ AppID: appId, S1_Price: s1GstFromFile, S2_Price: s2Amount, Difference: s2Amount - s1GstFromFile });
+                }
+            } else {
+                scenarios["S1 Record Missing in S2 (Unpaid)"].push({ AppID: appId, S1_Price: s1GstFromFile, Status: status });
+            }
+
+            mergedData.push({ AppID: appId, Source: 'S1', Status: status, Basic_Amount: basicAmount, GST_Price: s1GstFromFile, Commission: commission });
+        }
+
+        if (data.s2.length > 0) {
+            if (data.s1.length === 0) {
+                const s2Amount = Utils.safeParseFloat(data.s2[0][idx.s2Amount.s2]);
+                scenarios["S2 Paid but Missing in S1"].push({ AppID: appId, S2_Price: s2Amount });
+                mergedData.push({ AppID: appId, Source: 'S2', Status: 'Paid', Basic_Amount: 'N/A', GST_Price: s2Amount, Commission: 'N/A' });
+            }
+        }
+      },
       exportToExcel: (isMerged = false) => {
           const { analysisResults, mergedData } = AppState.getState();
-          const dataToExport = isMerged ? [{ name: "Merged_Data", records: mergedData }] : Object.entries(analysisResults).map(([name, records]) => ({ name, records })).filter(s => s.records.length > 0);
-          if (dataToExport.length === 0) return alert("No data to export.");
+          const dataToExport = isMerged ? 
+            [{ name: "Merged_Data", records: mergedData }] : 
+            Object.entries(analysisResults).map(([name, records]) => ({ name, records })).filter(s => s.records.length > 0);
+              
+          if (dataToExport.length === 0) { alert("No data to export."); return; }
           
-          Utils.showLoading();
+          Utils.showLoading('Exporting...');
           try {
             const wb = XLSX.utils.book_new();
-            dataToExport.forEach(sheet => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheet.records), sheet.name.substring(0, 31)));
+            dataToExport.forEach(sheet => {
+              const ws = XLSX.utils.json_to_sheet(sheet.records);
+              XLSX.utils.book_append_sheet(wb, ws, sheet.name.replace(/[^a-zA-Z0-9_ ]/g, "").substring(0, 31));
+            });
             XLSX.writeFile(wb, `Care4Sign_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
           } catch (e) { Utils.showError(`Export failed: ${e.message}`); } 
           finally { Utils.hideLoading(); }
@@ -530,16 +757,22 @@
         setInterval(Utils.updateUserInfo, 30000);
         
         DOM.analyzeBtn.onclick = () => {
-          Utils.showLoading();
-          setTimeout(() => {
-            try { UIManager.displayResults(Analyzer.analyzeData()); } 
-            catch (error) { Utils.showError(`Analysis failed: ${error.message}`); console.error(error); }
-            finally { Utils.hideLoading(); }
-          }, 10);
+          requestAnimationFrame(() => {
+            try { 
+              const results = Analyzer.analyzeData();
+              UIManager.displayResults(results); 
+            } catch (error) { 
+              Utils.showError(`Analysis failed: ${error.message}`); 
+              console.error(error);
+            } finally { 
+              Utils.hideLoading(); 
+            }
+          });
         };
         
         DOM.exportDetailedBtn.onclick = () => Analyzer.exportToExcel(false);
         DOM.exportMergedBtn.onclick = () => Analyzer.exportToExcel(true);
+        DOM.resetMappingsBtn.onclick = () => ColumnMapper.resetMappings();
         
         DOM.tabs.forEach(tab => tab.onclick = () => {
             const tabName = tab.dataset.tab;
@@ -547,6 +780,7 @@
             tab.classList.add('active');
             ['summaryView', 'detailedView', 'mergedView'].forEach(id => DOM[id].style.display = 'none');
             DOM[tabName + 'View'].style.display = 'block';
+            if(tabName !== 'summary') UIManager.attachTableSorters();
         });
       } catch (error) {
         console.error("Initialization error:", error);
