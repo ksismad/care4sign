@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- DEFINITIVE, PRO VERSION - 2023-11-02 (Bug Fix Release) -->
+  <!-- DEFINITIVE, PRO VERSION - 2023-11-02 (Bug Fix Release) -- IMPROVED 2025-07-11 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Advanced Reconciliation Pro (Care4Sign)</title>
@@ -518,8 +518,6 @@
             const savedIndex = savedMappings[id]?.[srcKey];
             const autoIndex = Utils.findMatch(headers, patterns);
             
-            // *** FIX FOR AUTO-SELECTION ***
-            // Prioritize saved value only if it's valid, otherwise fallback to auto-detection.
             const selectedIndex = (savedIndex != null && savedIndex !== '') ? savedIndex : (autoIndex !== -1 ? autoIndex : '');
             
             return `<select data-col="${id}" data-src="${srcKey}" id="${id}-${srcKey}">
@@ -535,7 +533,12 @@
 
             if (col.id === 'commission') {
                 if (s1Headers.length > 0) {
-                    const savedCommission = savedMappings.commission?.s1 || s1Headers.map((h, i) => col.p[0].test(String(h)) ? String(i) : null).filter(Boolean);
+                    const targetCommissionHeaders = ["Platinum Commission Amount", "BP Commission Amount", "BP Associates Commission Amount"];
+                    const autoSelectedCommission = s1Headers
+                        .map((h, i) => targetCommissionHeaders.includes(String(h || '').trim()) ? String(i) : null)
+                        .filter(Boolean);
+
+                    const savedCommission = savedMappings.commission?.s1 || autoSelectedCommission;
                     html += `<div class="commission-checkbox-group">${s1Headers.map((h, i) => `<label><input type="checkbox" class="commission-checkbox" value="${i}" ${savedCommission.includes(String(i)) ? 'checked' : ''}>${h || `Col ${i+1}`}</label>`).join('')}</div>`;
                 } else {
                     html += `<div class="commission-checkbox-group" style="color:var(--gray-500)">Load Source 1 file to see commission columns.</div>`;
